@@ -1,0 +1,21 @@
+name: PAgP
+description: >
+  Cisco's pre-LACP bundling protocol. Same questions as LACP.
+protocol_key: pagp
+display_filter: pagp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source MAC"
+    tshark_field: eth.src
+    description: "Sending interface"
+  - label: "Flags"
+    tshark_field: pagp.flags
+    description: "Bundle state bits"
+checks:
+  - name: no-bundle
+    when: "frames exchanged but no bundle forms"
+    means: >
+      One end is likely in a mode that will not initiate.
+    next: "Prefer LACP for anything new; PAgP only exists where the kit demands it"

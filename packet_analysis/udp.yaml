@@ -1,0 +1,37 @@
+name: UDP
+description: >
+  A stateless envelope. What matters is whether the port is right and
+  whether anything comes back.
+protocol_key: udp
+display_filter: udp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Source port"
+    tshark_field: udp.srcport
+    description: "Sender's port"
+  - label: "Destination port"
+    tshark_field: udp.dstport
+    description: "Service being addressed"
+  - label: "Length"
+    tshark_field: udp.length
+    description: "Envelope size including header"
+checks:
+  - name: no-response
+    when: "datagrams sent with nothing returning"
+    means: >
+      Normal for one-way protocols; a fault for request/response ones. UDP
+      will not tell you which.
+    next: "Check whether an ICMP port-unreachable came back — that is the real answer"
+  - name: port-mismatch
+    when: "destination port is not what the service uses"
+    means: >
+      The client is pointed somewhere else.
+    next: "Confirm the listener with ss -lnu on the destination"

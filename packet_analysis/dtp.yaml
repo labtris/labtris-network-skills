@@ -1,0 +1,40 @@
+name: DTP trunk negotiation
+description: >
+  Whether two Cisco ports agreed to form a trunk, and whether you meant
+  them to.
+protocol_key: dtp
+display_filter: dtp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source MAC"
+    tshark_field: eth.src
+    description: "Sending interface"
+  - label: "Version"
+    tshark_field: dtp.version
+    description: "Protocol version"
+  - label: "Domain"
+    tshark_field: dtp.domain
+    description: "VTP domain — must match to negotiate"
+  - label: "TLV type"
+    tshark_field: dtp.tlv_type
+    description: "Which attribute follows"
+  - label: "Operating status"
+    tshark_field: dtp.tos
+    description: "What the port is doing now"
+  - label: "Admin status"
+    tshark_field: dtp.tas
+    description: "What it was configured to do"
+checks:
+  - name: unintended-trunk
+    when: "a trunk formed on a port meant for a host"
+    means: >
+      Dynamic auto or desirable negotiated a trunk with whatever was
+      plugged in. A security problem as much as a config one.
+    next: "Set access mode explicitly and turn negotiation off"
+  - name: domain-mismatch
+    when: "dtp.domain differs between ends"
+    means: >
+      Negotiation will not complete.
+    next: "Match the VTP domain or configure both ends statically"

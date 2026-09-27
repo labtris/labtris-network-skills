@@ -1,0 +1,47 @@
+name: IPv4 forwarding
+description: >
+  Whether packets are taking the path you think, and whether fragmentation
+  is involved.
+protocol_key: ip
+display_filter: ip
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "TTL"
+    tshark_field: ip.ttl
+    description: "Decrements per hop — the hop count is the clue"
+  - label: "Protocol"
+    tshark_field: ip.proto
+    description: "6 TCP, 17 UDP, 1 ICMP, 89 OSPF"
+  - label: "More fragments"
+    tshark_field: ip.flags.mf
+    description: "Set on all but the last fragment"
+  - label: "Fragment offset"
+    tshark_field: ip.frag_offset
+    description: "Non-zero means this is not the first fragment"
+checks:
+  - name: ttl-suggests-extra-hops
+    when: "TTL is far below the expected start value"
+    means: >
+      More hops than the topology has, which usually means a loop or an
+      unexpected path.
+    next: "Traceroute the same destination and compare against the diagram"
+  - name: fragmentation
+    when: "ip.flags.mf set or frag_offset non-zero"
+    means: >
+      Something is exceeding the path MTU. Fragments are fragile and often
+      dropped by filters.
+    next: "Find the smallest MTU on the path; a tunnel is the usual culprit"
+  - name: asymmetric-paths
+    when: "forward and return traffic show different TTLs"
+    means: >
+      The two directions take different routes, which breaks stateful
+      devices.
+    next: "Acceptable in a routed core, fatal through a firewall"

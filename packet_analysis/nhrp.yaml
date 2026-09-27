@@ -1,0 +1,25 @@
+name: NHRP
+description: >
+  Next-hop resolution in DMVPN. Usually the reason a spoke-to-spoke tunnel
+  does or does not form.
+protocol_key: nhrp
+display_filter: nhrp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Packet size"
+    tshark_field: nhrp.hdr.pktsz
+    description: "Header length field"
+checks:
+  - name: registration-no-reply
+    when: "spokes registering with no response"
+    means: >
+      The hub is not answering, so no spoke will learn any other spoke.
+    next: "Check the hub's NHRP configuration and reachability"

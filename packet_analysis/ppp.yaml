@@ -1,0 +1,25 @@
+name: PPP
+description: >
+  Point-to-point links, including the LCP and NCP negotiation that decides
+  whether anything runs.
+protocol_key: ppp
+display_filter: ppp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Protocol"
+    tshark_field: ppp.protocol
+    description: "0xc021 LCP, 0x8021 IPCP, 0xc023 PAP, 0xc223 CHAP"
+checks:
+  - name: lcp-loops
+    when: "LCP negotiating repeatedly"
+    means: >
+      The two ends cannot agree on options, or authentication keeps
+      failing after LCP succeeds.
+    next: "Watch for CHAP or PAP immediately before each restart"
+  - name: lcp-up-no-ipcp
+    when: "LCP completes and IPCP does not"
+    means: >
+      The link is up at layer 2 and no addressing is agreed.
+    next: "Check the address pool or the static addresses on both ends"

@@ -1,0 +1,39 @@
+name: 802.1Q VLAN tagging
+description: >
+  Whether a frame is tagged, with which VLAN, and at which priority.
+  Priority matters on a lab with per-class queueing.
+protocol_key: vlan
+display_filter: vlan
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source MAC"
+    tshark_field: eth.src
+    description: "Sending interface"
+  - label: "VLAN ID"
+    tshark_field: vlan.id
+    description: "1-4094; 1 is usually the untagged default"
+  - label: "Priority"
+    tshark_field: vlan.priority
+    description: "802.1p PCP — the class a PFC-enabled link queues on"
+  - label: "Encapsulated type"
+    tshark_field: vlan.etype
+    description: "What is inside the tag"
+checks:
+  - name: untagged-where-tagged-expected
+    when: "no vlan.id on a trunk"
+    means: >
+      The frame is on the native VLAN, or the port is an access port.
+    next: "Native-VLAN mismatch between two trunks silently merges two broadcast domains — check both ends"
+  - name: all-priority-zero
+    when: "vlan.priority is 0 on traffic meant to be prioritised"
+    means: >
+      Nothing is marking the traffic, so per-priority queueing has nothing
+      to act on.
+    next: "Mark at the source; the queue cannot classify what is not marked"
+  - name: unexpected-vlan
+    when: "a VLAN ID that is not in the design"
+    means: >
+      A trunk is allowing more than it should.
+    next: "Prune the allowed list"

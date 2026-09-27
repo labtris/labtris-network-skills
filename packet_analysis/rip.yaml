@@ -1,0 +1,36 @@
+name: RIP
+description: >
+  Distance-vector routing. Simple enough that the capture tells you almost
+  everything.
+protocol_key: rip
+display_filter: rip
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Command"
+    tshark_field: rip.command
+    description: "1 request, 2 response"
+  - label: "Network"
+    tshark_field: rip.ip
+    description: "Advertised prefix"
+  - label: "Metric"
+    tshark_field: rip.metric
+    description: "Hop count; 16 means unreachable"
+checks:
+  - name: metric-16
+    when: "routes advertised with metric 16"
+    means: >
+      Poison reverse — the route is being withdrawn, not offered.
+    next: "Expected during convergence; a problem if it persists"
+  - name: no-updates
+    when: "nothing every 30 seconds"
+    means: >
+      RIP is not running on the interface, or updates are being filtered.
+    next: "RIP v2 uses multicast 224.0.0.9; v1 broadcasts. A version mismatch looks like silence"

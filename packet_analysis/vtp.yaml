@@ -1,0 +1,32 @@
+name: VTP
+description: >
+  VLAN database propagation between Cisco switches. Powerful and dangerous
+  in equal measure.
+protocol_key: vtp
+display_filter: vtp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source MAC"
+    tshark_field: eth.src
+    description: "Sending interface"
+  - label: "Code"
+    tshark_field: vtp.code
+    description: "1 summary, 2 subset, 3 request advert"
+  - label: "VLAN name"
+    tshark_field: vtp.vlan_info.vlan_name
+    description: "VLANs being advertised"
+checks:
+  - name: unexpected-advert
+    when: "a switch advertising VLANs it should not own"
+    means: >
+      A switch with a higher revision number can overwrite the whole
+      domain's VLAN database.
+    next: "Set switches you do not trust to transparent mode"
+  - name: vlans-disappearing
+    when: "subset adverts removing VLANs"
+    means: >
+      Exactly the failure VTP is famous for, usually after inserting a
+      switch with stale configuration.
+    next: "Reset the revision number before attaching any switch to a VTP domain"

@@ -1,0 +1,36 @@
+name: SNMP
+description: >
+  Polling and traps. Most SNMP problems are credentials or ACLs rather
+  than the protocol.
+protocol_key: snmp
+display_filter: snmp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Version"
+    tshark_field: snmp.version
+    description: "0 v1, 1 v2c, 3 v3"
+  - label: "Community"
+    tshark_field: snmp.community
+    description: "Plain text in v1 and v2c"
+  - label: "Data"
+    tshark_field: snmp.data
+    description: "The PDU type — get, getnext, response, trap"
+checks:
+  - name: get-no-response
+    when: "gets with no responses"
+    means: >
+      Wrong community, an ACL on the agent, or the agent is not running.
+    next: "v1 and v2c send the community in clear — read it from the capture and compare"
+  - name: v2c-in-production
+    when: "version is 0 or 1 outside a lab"
+    means: >
+      Credentials are on the wire in plain text.
+    next: "Fine in a lab, and worth noticing that you can read them"

@@ -1,0 +1,43 @@
+name: LLDP neighbour discovery
+description: >
+  What a device says it is and which port you are plugged into. The
+  fastest way to confirm cabling matches the diagram.
+protocol_key: lldp
+display_filter: lldp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source MAC"
+    tshark_field: eth.src
+    description: "Sending interface"
+  - label: "System Name"
+    tshark_field: lldp.tlv.system.name
+    description: "The neighbour's hostname"
+  - label: "System Description"
+    tshark_field: lldp.tlv.system.desc
+    description: "Platform and version string"
+  - label: "Chassis ID"
+    tshark_field: lldp.chassis.id
+    description: "Identifies the device"
+  - label: "Port ID"
+    tshark_field: lldp.port.id
+    description: "Which of its ports this came from"
+checks:
+  - name: no-lldp-at-all
+    when: "no frames on a link where both ends should advertise"
+    means: >
+      LLDP is off on one end, or a bridge in between is consuming the
+      frames. LLDP uses a reserved multicast address that Linux bridges
+      swallow by default.
+    next: "Labtris forwards this range deliberately; on other emulators check the bridge's group_fwd_mask"
+  - name: one-way
+    when: "frames from one end only"
+    means: >
+      The quiet end has LLDP receive-only or disabled.
+    next: "Enable transmit on the quiet device"
+  - name: wrong-neighbour
+    when: "system name is not the device the diagram expects"
+    means: >
+      The cabling does not match the drawing.
+    next: "Trust the capture over the diagram"

@@ -1,0 +1,20 @@
+name: Cisco HDLC
+description: >
+  The default serial encapsulation on Cisco kit. Legacy, and still on
+  exams.
+protocol_key: hdlc
+legacy: true  # kept for study material, not for deployment
+display_filter: hdlc
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Protocol"
+    tshark_field: ppp.protocol
+    description: "What is carried — HDLC reuses the PPP protocol numbers"
+checks:
+  - name: keepalive-mismatch
+    when: "one end keepalive, other end not"
+    means: >
+      The link will flap. Cisco HDLC keepalives must agree.
+    next: "Match keepalive settings on both ends"

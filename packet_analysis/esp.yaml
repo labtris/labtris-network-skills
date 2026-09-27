@@ -1,0 +1,34 @@
+name: ESP
+description: >
+  Encrypted VPN payload. You can see that it flows and little else, which
+  is itself useful.
+protocol_key: esp
+display_filter: esp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "SPI"
+    tshark_field: esp.spi
+    description: "Identifies the security association"
+  - label: "Sequence"
+    tshark_field: esp.sequence
+    description: "Replay protection counter"
+checks:
+  - name: one-way-esp
+    when: "ESP in one direction only"
+    means: >
+      One side is encrypting and the other is not decrypting, or the
+      return SA is missing.
+    next: "Compare the SPIs each end expects"
+  - name: sequence-gaps
+    when: "esp.sequence jumps"
+    means: >
+      Packets are being lost inside the tunnel.
+    next: "Look at the underlay path, not the VPN config"

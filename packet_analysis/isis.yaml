@@ -1,0 +1,34 @@
+name: IS-IS
+description: >
+  Adjacency and LSP exchange in IS-IS, the IGP most datacentre underlays
+  use when they are not using BGP.
+protocol_key: isis
+display_filter: isis
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source MAC"
+    tshark_field: eth.src
+    description: "Sending interface"
+  - label: "PDU type"
+    tshark_field: isis.type
+    description: "Hello, LSP, CSNP or PSNP"
+  - label: "Circuit type"
+    tshark_field: isis.hello.circuit_type
+    description: "Level 1, level 2 or both"
+  - label: "LSP ID"
+    tshark_field: isis.lsp.lsp_id
+    description: "Identifies a link-state PDU and its originator"
+checks:
+  - name: level-mismatch
+    when: "circuit types do not overlap"
+    means: >
+      A level-1-only and a level-2-only interface will not adjacate.
+    next: "Set both ends to a compatible level"
+  - name: hellos-no-lsps
+    when: "hellos flow, no LSPs"
+    means: >
+      The adjacency is up but the database is not exchanging — often an
+      MTU problem, since LSPs are larger than hellos.
+    next: "IS-IS is unusually sensitive to MTU; test with large pings before blaming config"

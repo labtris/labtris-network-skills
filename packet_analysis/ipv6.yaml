@@ -1,0 +1,32 @@
+name: IPv6 forwarding
+description: >
+  The v6 equivalent, plus the neighbour discovery that replaces ARP.
+protocol_key: ipv6
+display_filter: ipv6
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ipv6.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ipv6.dst
+    description: "Receiving address"
+  - label: "Hop limit"
+    tshark_field: ipv6.hlim
+    description: "The v6 TTL"
+  - label: "Next header"
+    tshark_field: ipv6.nxt
+    description: "6 TCP, 17 UDP, 58 ICMPv6"
+checks:
+  - name: link-local-only
+    when: "addresses are all fe80::"
+    means: >
+      No global addressing has been configured or advertised.
+    next: "Check for router advertisements before configuring addresses by hand"
+  - name: no-neighbour-discovery
+    when: "no ICMPv6 type 135/136 on a segment"
+    means: >
+      Nothing is resolving addresses, so nothing will forward.
+    next: "ICMPv6 must not be filtered — unlike ARP it is part of forwarding, not adjacent to it"

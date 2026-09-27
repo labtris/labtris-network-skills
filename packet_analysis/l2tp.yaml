@@ -1,0 +1,27 @@
+name: L2TP
+description: >
+  Layer 2 tunnelling, usually under a VPN.
+protocol_key: l2tp
+display_filter: l2tp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Type"
+    tshark_field: l2tp.type
+    description: "Control or data message"
+  - label: "Flags"
+    tshark_field: l2tp.flags
+    description: "Length, sequence and offset bits"
+checks:
+  - name: control-no-data
+    when: "control messages only"
+    means: >
+      The tunnel negotiated and no session carries traffic.
+    next: "Check the session layer above the tunnel"

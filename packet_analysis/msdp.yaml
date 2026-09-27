@@ -1,0 +1,26 @@
+name: MSDP
+description: >
+  Multicast source discovery between rendezvous points in different
+  domains.
+protocol_key: msdp
+display_filter: msdp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Type"
+    tshark_field: msdp.type
+    description: "Source-active and keepalive messages"
+checks:
+  - name: no-source-active
+    when: "peering up but no SA messages"
+    means: >
+      No sources are being advertised, so cross-domain multicast will not
+      work.
+    next: "Confirm a source is actually sending in the origin domain"

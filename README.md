@@ -62,13 +62,15 @@ is still a rule — it stops someone concluding their lab is broken.
 
 ## Coverage, honestly
 
-GNS3's repository has 61 protocol rules and 51 fault families. This one has
-six and four. On breadth we are nowhere, and a contributor should know that
-going in rather than discover it.
+**63 protocol rules**, against GNS3's 60. The overlap is the ordinary
+catalogue — routing, switching, security, WAN and legacy — and four are
+ones no other emulator can write, because they describe traffic it cannot
+produce: `roce_v2`, `uet`, `ecn_marking` and `pfc`.
 
-Where this repository is not behind is the part that comes from what
-Labtris can actually run: RoCEv2, Ultra Ethernet, ECN under queue pressure
-and PFC. Those cannot be written against an emulator that has no RDMA, no
-UET stack and no priority queueing, which is why they do not exist
-elsewhere. Breadth is a matter of time; those four are a matter of what the
-platform underneath can do.
+Fault families are still four against their 51. That gap is real and is
+the next thing to close.
+
+Nine rules carry `legacy: true` — DECnet, DVMRP, Frame Relay, Cisco HDLC,
+ISL, LLC, Ethernet loopback, NetBIOS name service and SLARP. They are here
+because study material still references them, not because anyone should
+deploy them. The flag lets a loader hide them by default.

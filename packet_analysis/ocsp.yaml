@@ -1,0 +1,26 @@
+name: OCSP
+description: >
+  Certificate revocation checking. A slow or blocked OCSP responder stalls
+  TLS handshakes.
+protocol_key: ocsp
+display_filter: ocsp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Response type"
+    tshark_field: ocsp.responseType.id
+    description: "Which response format"
+checks:
+  - name: no-response
+    when: "requests with no reply"
+    means: >
+      The responder is unreachable and clients may hang rather than fail
+      fast.
+    next: "Check whether the client is configured to soft-fail"

@@ -1,0 +1,31 @@
+name: MPLS label switching
+description: >
+  Which label a packet carries and where in the stack it sits.
+protocol_key: mpls
+display_filter: mpls
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Label"
+    tshark_field: mpls.label
+    description: "The forwarding label"
+  - label: "Experimental"
+    tshark_field: mpls.exp
+    description: "Traffic class bits, used for QoS"
+  - label: "Bottom of stack"
+    tshark_field: mpls.bottom
+    description: "1 means this is the last label"
+checks:
+  - name: unexpected-label-depth
+    when: "more labels than the design uses"
+    means: >
+      An extra layer of encapsulation, or a service label where only a
+      transport one was expected.
+    next: "Compare against the intended stack; MTU problems usually start here"
+  - name: exp-not-set
+    when: "mpls.exp is zero on traffic that should be prioritised"
+    means: >
+      QoS marking was not copied into the label stack, so the core will
+      not honour it.
+    next: "Set the EXP bits at the edge"

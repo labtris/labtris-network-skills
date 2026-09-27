@@ -1,0 +1,45 @@
+name: DHCP address assignment
+description: >
+  Why a client does not get an address, or gets the wrong one. Read the
+  four-message exchange in order.
+protocol_key: dhcp
+display_filter: dhcp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Message Type"
+    tshark_field: dhcp.option.dhcp
+    description: "1 DISCOVER, 2 OFFER, 3 REQUEST, 5 ACK, 6 NAK"
+  - label: "Client MAC"
+    tshark_field: dhcp.hw.mac_addr
+    description: "Which client"
+  - label: "Your IP"
+    tshark_field: dhcp.ip.your
+    description: "The address being offered or confirmed"
+  - label: "Requested IP"
+    tshark_field: dhcp.option.requested_ip_address
+    description: "What the client asked to keep"
+  - label: "Server ID"
+    tshark_field: dhcp.option.dhcp_server_id
+    description: "Which server answered"
+checks:
+  - name: discover-no-offer
+    when: "DISCOVER repeats with no OFFER"
+    means: >
+      No server heard it, or none has a free lease. DHCP is broadcast, so
+      a missing relay on a routed segment looks exactly like a dead
+      server.
+    next: "Check for a relay/helper on the client's gateway before looking at the server"
+  - name: nak-after-request
+    when: "REQUEST answered with NAK"
+    means: >
+      The client asked to keep an address the server will not honour —
+      usually a stale lease from another subnet.
+    next: "Have the client release and rediscover"
+  - name: two-server-ids
+    when: "OFFERs carry different dhcp.option.dhcp_server_id"
+    means: >
+      Two servers are answering. The client takes the first, which may not
+      be the one you configured.
+    next: "Find the second server; in a lab it is often a NAT segment's own dnsmasq"

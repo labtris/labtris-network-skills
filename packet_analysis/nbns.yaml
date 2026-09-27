@@ -1,0 +1,23 @@
+name: NetBIOS name service
+description: >
+  Legacy Windows name resolution. Mostly seen as background noise that
+  explains broadcast volume.
+protocol_key: nbns
+legacy: true  # kept for study material, not for deployment
+display_filter: nbns
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Name"
+    tshark_field: nbns.name
+    description: "The NetBIOS name queried"
+checks:
+  - name: broadcast-volume
+    when: "frequent broadcasts from many hosts"
+    means: >
+      Normal for a Windows segment and a common surprise in a quiet lab.
+    next: "Not a fault; useful for explaining why broadcast domains are sized as they are"

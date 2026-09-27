@@ -1,0 +1,43 @@
+name: EIGRP
+description: >
+  Why an EIGRP adjacency does not form or routes do not appear.
+  Cisco-proprietary, so this needs a vendor image.
+protocol_key: eigrp
+display_filter: eigrp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Opcode"
+    tshark_field: eigrp.opcode
+    description: "1 update, 3 query, 4 reply, 5 hello"
+  - label: "AS number"
+    tshark_field: eigrp.as
+    description: "Must match between neighbours"
+  - label: "Sequence"
+    tshark_field: eigrp.seq
+    description: "Reliable transport sequence"
+  - label: "Flags"
+    tshark_field: eigrp.flags
+    description: "Init and restart bits"
+checks:
+  - name: as-mismatch
+    when: "eigrp.as differs between senders"
+    means: >
+      Neighbours in different autonomous systems never adjacate.
+    next: "Make the AS numbers match"
+  - name: hellos-no-updates
+    when: "opcode 5 only, never 1"
+    means: >
+      Adjacency is forming but no routes are exchanged — often an
+      authentication or a K-value mismatch.
+    next: "Check the metric weights and any authentication on both ends"
+  - name: stuck-in-active
+    when: "queries repeat without replies"
+    means: >
+      A route is stuck active because a neighbour is not answering, which
+      will eventually tear the adjacency down.
+    next: "Find the unresponsive neighbour; the query names the route"

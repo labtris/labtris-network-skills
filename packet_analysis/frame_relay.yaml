@@ -1,0 +1,24 @@
+name: Frame Relay
+description: >
+  Legacy WAN encapsulation. Present for completeness and for old study
+  material.
+protocol_key: frame_relay
+legacy: true  # kept for study material, not for deployment
+display_filter: fr
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "DLCI"
+    tshark_field: fr.dlci
+    description: "Identifies the virtual circuit"
+  - label: "Control"
+    tshark_field: fr.control
+    description: "Frame type"
+checks:
+  - name: dlci-mismatch
+    when: "a DLCI the far end does not expect"
+    means: >
+      Circuit identifiers are locally significant and must be mapped
+      correctly at each end.
+    next: "Compare the mapping on both routers"

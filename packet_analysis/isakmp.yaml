@@ -1,0 +1,33 @@
+name: IKE / ISAKMP
+description: >
+  VPN negotiation. If phase 1 does not complete, nothing above it will.
+protocol_key: isakmp
+display_filter: isakmp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Exchange type"
+    tshark_field: isakmp.exchangetype
+    description: "Identity protection, aggressive, informational"
+  - label: "Message ID"
+    tshark_field: isakmp.messageid
+    description: "Zero in phase 1, non-zero in phase 2"
+checks:
+  - name: phase1-never-completes
+    when: "exchanges repeat with no phase 2"
+    means: >
+      Proposal mismatch or an authentication failure. Both look the same
+      from outside.
+    next: "Compare the proposals on each side — encryption, hash, DH group, lifetime"
+  - name: informational-then-silence
+    when: "an informational exchange followed by nothing"
+    means: >
+      One side sent a delete or an error and gave up.
+    next: "The far end's logs will name the reason; the capture will not"

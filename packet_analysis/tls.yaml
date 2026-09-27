@@ -1,0 +1,45 @@
+name: TLS handshake
+description: >
+  Whether an encrypted session establishes, and if not, which side
+  objected. The handshake is in the clear even when the data is not.
+protocol_key: tls
+display_filter: tls
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Handshake type"
+    tshark_field: tls.handshake.type
+    description: "1 client hello, 2 server hello, 11 certificate"
+  - label: "Version"
+    tshark_field: tls.record.version
+    description: "Negotiated record version"
+  - label: "Server name"
+    tshark_field: tls.handshake.extensions_server_name
+    description: "SNI — which host the client asked for"
+  - label: "Alert"
+    tshark_field: tls.alert_message.desc
+    description: "Why a side gave up"
+checks:
+  - name: hello-then-alert
+    when: "a client hello answered with an alert"
+    means: >
+      The two cannot agree, or the certificate was rejected. The alert
+      description names which.
+    next: "Read tls.alert_message.desc before changing anything"
+  - name: sni-mismatch
+    when: "server name is not the host you expect"
+    means: >
+      The client is asking for a different virtual host than intended.
+    next: "Check the client's configured URL against SNI"
+  - name: no-server-hello
+    when: "client hello with no reply"
+    means: >
+      TCP connected and TLS did not. Often a port serving plain HTTP.
+    next: "Confirm what the port actually speaks"

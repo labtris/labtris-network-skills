@@ -1,0 +1,35 @@
+name: ICMPv6 and neighbour discovery
+description: >
+  In IPv6 this carries address resolution, router discovery and error
+  reporting. Filtering it breaks the network rather than hardening it.
+protocol_key: icmpv6
+display_filter: icmpv6
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ipv6.src
+    description: "Sender"
+  - label: "Destination"
+    tshark_field: ipv6.dst
+    description: "Target"
+  - label: "Type"
+    tshark_field: icmpv6.type
+    description: "1 unreachable, 128/129 echo, 133 RS, 134 RA, 135 NS, 136 NA"
+  - label: "Code"
+    tshark_field: icmpv6.code
+    description: "Qualifies the type"
+checks:
+  - name: rs-without-ra
+    when: "type 133 repeating with no type 134"
+    means: >
+      No router is advertising on the segment, so hosts will not
+      autoconfigure.
+    next: "Enable router advertisements on the gateway"
+  - name: ns-without-na
+    when: "type 135 with no type 136"
+    means: >
+      The target is not answering address resolution — the v6 equivalent
+      of silent ARP.
+    next: "Confirm the target is up and not filtering ICMPv6"

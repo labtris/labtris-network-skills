@@ -1,0 +1,32 @@
+name: GRE tunnels
+description: >
+  What is inside a tunnel, and whether the tunnel itself is up.
+protocol_key: gre
+display_filter: gre
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Protocol"
+    tshark_field: gre.proto
+    description: "What is encapsulated"
+  - label: "Key"
+    tshark_field: gre.key
+    description: "Distinguishes tunnels between the same endpoints"
+checks:
+  - name: tunnel-up-no-traffic
+    when: "GRE between endpoints but nothing inside"
+    means: >
+      The tunnel exists and nothing routes over it.
+    next: "Check the routing that should point into the tunnel interface"
+  - name: fragmentation-inside
+    when: "fragments appearing after encapsulation"
+    means: >
+      The tunnel overhead pushed packets past the path MTU.
+    next: "Lower the tunnel MTU or clamp MSS"

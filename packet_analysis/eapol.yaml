@@ -1,0 +1,43 @@
+name: 802.1X / EAPOL
+description: >
+  Port-based authentication. The supplicant, authenticator and server each
+  fail differently.
+protocol_key: eapol
+display_filter: eapol
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source MAC"
+    tshark_field: eth.src
+    description: "Sending interface"
+  - label: "Version"
+    tshark_field: eapol.version
+    description: "EAPOL version"
+  - label: "Type"
+    tshark_field: eapol.type
+    description: "Start, logoff, key, or EAP packet"
+  - label: "EAP code"
+    tshark_field: eap.code
+    description: "1 request, 2 response, 3 success, 4 failure"
+  - label: "EAP type"
+    tshark_field: eap.type
+    description: "Which method — MD5, TLS, PEAP"
+checks:
+  - name: start-no-request
+    when: "EAPOL-Start with no EAP request"
+    means: >
+      The authenticator is not configured for 802.1X on this port, or is
+      not forwarding to the server.
+    next: "Check the port before the supplicant"
+  - name: eap-failure
+    when: "eap.code is 4"
+    means: >
+      The server rejected the credentials or the method.
+    next: "The RADIUS exchange behind it has the reason"
+  - name: no-eapol-on-a-labtris-link
+    when: "nothing matches on a link that should authenticate"
+    means: >
+      EAPOL uses a reserved multicast address that a Linux bridge swallows
+      by default. Labtris forwards this range deliberately.
+    next: "On another emulator, check the bridge group_fwd_mask"

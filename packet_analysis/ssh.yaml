@@ -1,0 +1,29 @@
+name: SSH
+description: >
+  Version exchange and whether the session gets past it. The interesting
+  part is encrypted.
+protocol_key: ssh
+display_filter: ssh
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Protocol"
+    tshark_field: ssh.protocol
+    description: "The banner each side sends"
+  - label: "Message code"
+    tshark_field: ssh.message_code
+    description: "Key exchange and authentication stages"
+checks:
+  - name: banner-then-close
+    when: "banners exchanged, connection closes"
+    means: >
+      No common key exchange or cipher — often an old client against a
+      hardened server.
+    next: "The banners name both versions; compare them"

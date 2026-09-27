@@ -1,0 +1,25 @@
+name: LLC
+description: >
+  The 802.2 header under non-IP legacy traffic, notably STP.
+protocol_key: llc
+legacy: true  # kept for study material, not for deployment
+display_filter: llc
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source MAC"
+    tshark_field: eth.src
+    description: "Sending interface"
+  - label: "DSAP"
+    tshark_field: llc.dsap
+    description: "Destination service access point"
+  - label: "SSAP"
+    tshark_field: llc.ssap
+    description: "Source service access point"
+checks:
+  - name: unexpected-sap
+    when: "a SAP value you do not recognise"
+    means: >
+      Legacy protocol traffic on a modern segment.
+    next: "Identify it before assuming it is harmless"

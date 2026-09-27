@@ -1,0 +1,29 @@
+name: UDLD
+description: >
+  Detects a link that carries traffic one way only — the failure a
+  physical check will not find.
+protocol_key: udld
+display_filter: udld
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source MAC"
+    tshark_field: eth.src
+    description: "Sending interface"
+  - label: "Version"
+    tshark_field: udld.version
+    description: "Protocol version"
+  - label: "Opcode"
+    tshark_field: udld.opcode
+    description: "Probe or echo"
+  - label: "Flags"
+    tshark_field: udld.flags
+    description: "Includes the recovery-related bits"
+checks:
+  - name: probes-no-echoes
+    when: "probes sent, nothing echoed"
+    means: >
+      The far end is not hearing us, or we are not hearing it. This is
+      precisely what UDLD exists to catch.
+    next: "In aggressive mode the port will be err-disabled; that is the protocol working, not a fault"

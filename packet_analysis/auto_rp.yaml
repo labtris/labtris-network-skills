@@ -1,0 +1,31 @@
+name: Auto-RP
+description: >
+  Cisco's way of announcing multicast rendezvous points before bootstrap
+  router existed.
+protocol_key: auto_rp
+display_filter: auto_rp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Version"
+    tshark_field: auto_rp.version
+    description: "Protocol version"
+  - label: "Type"
+    tshark_field: auto_rp.type
+    description: "Announce or discovery"
+  - label: "RP count"
+    tshark_field: auto_rp.rp_count
+    description: "How many RPs are named"
+  - label: "Group"
+    tshark_field: auto_rp.group_num
+    description: "Groups this RP serves"
+checks:
+  - name: announcements-no-discovery
+    when: "announce messages with no discovery"
+    means: >
+      The mapping agent is not relaying, so routers never learn the RP.
+    next: "Check the mapping agent before the RP itself"

@@ -1,0 +1,46 @@
+name: ICMP
+description: >
+  What the network is telling you about a failure. ICMP is usually the
+  answer rather than the problem.
+protocol_key: icmp
+display_filter: icmp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Type"
+    tshark_field: icmp.type
+    description: "0 echo reply, 3 unreachable, 8 echo request, 11 time exceeded"
+  - label: "Code"
+    tshark_field: icmp.code
+    description: "Qualifies the type — for type 3, 0 net, 1 host, 3 port, 4 frag needed"
+  - label: "Sequence"
+    tshark_field: icmp.seq
+    description: "Pairs a request with its reply"
+  - label: "TTL"
+    tshark_field: ip.ttl
+    description: "How many hops were left"
+checks:
+  - name: unreachable-from-a-router
+    when: "type 3 from an address that is not the destination"
+    means: >
+      A router on the path is rejecting it. The code says why, and the
+      source says where.
+    next: "Read icmp.code; type 3 code 4 means an MTU problem, not a routing one"
+  - name: time-exceeded
+    when: "type 11"
+    means: >
+      TTL ran out — a routing loop, or simply a traceroute in progress.
+    next: "If it is not a traceroute, look for a loop between the two routers that keep appearing"
+  - name: requests-without-replies
+    when: "type 8 with no matching type 0"
+    means: >
+      The destination is not responding. It may be down, filtered, or the
+      return path may be broken.
+    next: "Capture at the destination: a request that arrives and is not answered is a host problem, not a network one"

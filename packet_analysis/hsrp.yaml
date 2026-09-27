@@ -1,0 +1,37 @@
+name: HSRP
+description: >
+  The Cisco equivalent of VRRP. Same questions: who is active, and is that
+  stable.
+protocol_key: hsrp
+display_filter: hsrp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Opcode"
+    tshark_field: hsrp.opcode
+    description: "0 hello, 1 coup, 2 resign"
+  - label: "State"
+    tshark_field: hsrp.state
+    description: "Active, standby, speak, listen"
+  - label: "Priority"
+    tshark_field: hsrp.priority
+    description: "Highest wins"
+  - label: "Virtual IP"
+    tshark_field: hsrp.virt_ip
+    description: "The address being shared"
+checks:
+  - name: two-active
+    when: "two speakers in the active state"
+    means: >
+      Split brain — the pair cannot hear each other.
+    next: "HSRP hellos are multicast; check the segment carries them"
+  - name: coup
+    when: "opcode 1 appears"
+    means: >
+      A higher-priority router is taking over, which is preemption working
+      as configured.
+    next: "Only a problem if it is repeating"

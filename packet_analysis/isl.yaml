@@ -1,0 +1,19 @@
+name: ISL
+description: >
+  Cisco's pre-802.1Q VLAN tagging. Obsolete.
+protocol_key: isl
+legacy: true  # kept for study material, not for deployment
+display_filter: isl
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Destination"
+    tshark_field: isl.dst
+    description: "ISL header destination"
+checks:
+  - name: isl-present
+    when: "any ISL frames at all"
+    means: >
+      Something very old is trunking. 802.1Q replaced this.
+    next: "Migrate to dot1q"

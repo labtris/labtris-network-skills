@@ -1,0 +1,33 @@
+name: VRRP
+description: >
+  Which router owns the virtual address, and whether ownership is stable.
+protocol_key: vrrp
+display_filter: vrrp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Type"
+    tshark_field: vrrp.type
+    description: "1 advertisement"
+  - label: "Virtual router ID"
+    tshark_field: vrrp.virt_rtr_id
+    description: "Identifies the group"
+  - label: "Priority"
+    tshark_field: vrrp.prio
+    description: "Highest wins; 255 is the address owner"
+checks:
+  - name: two-masters
+    when: "advertisements from two sources for one VRID"
+    means: >
+      A split brain. Both believe they are master, so the virtual MAC
+      appears in two places.
+    next: "Check reachability between the pair — they cannot see each other"
+  - name: priority-flapping
+    when: "priority changes repeatedly"
+    means: >
+      Tracking is flapping an interface, and taking the gateway with it.
+    next: "Find the tracked object; the instability is there, not in VRRP"

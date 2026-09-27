@@ -1,0 +1,48 @@
+name: HTTP
+description: >
+  What was requested, what came back, and how long it took.
+protocol_key: http
+display_filter: http
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Method"
+    tshark_field: http.request.method
+    description: "GET, POST and friends"
+  - label: "URI"
+    tshark_field: http.request.uri
+    description: "What was asked for"
+  - label: "Host"
+    tshark_field: http.host
+    description: "Which virtual host"
+  - label: "Status"
+    tshark_field: http.response.code
+    description: "2xx fine, 4xx client, 5xx server"
+  - label: "Time"
+    tshark_field: http.time
+    description: "Seconds between request and response"
+checks:
+  - name: no-response
+    when: "a request with no matching response"
+    means: >
+      The server never answered. Look at TCP first — an unanswered request
+      often has an unestablished connection underneath.
+    next: "Filter the same tcp.stream and check it completed a handshake"
+  - name: slow-response
+    when: "http.time is large"
+    means: >
+      The server is slow, or the path is. These look identical from one
+      end.
+    next: "Compare http.time against the TCP round-trip on the same stream"
+  - name: 5xx
+    when: "status is 5xx"
+    means: >
+      The server reached its own failure. Not a network problem.
+    next: "Read the server's logs; the capture has told you all it can"

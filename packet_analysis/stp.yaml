@@ -1,0 +1,47 @@
+name: Spanning Tree
+description: >
+  Which switch is root, which ports are blocking, and whether the topology
+  is still converging.
+protocol_key: stp
+display_filter: stp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source MAC"
+    tshark_field: eth.src
+    description: "Sending interface"
+  - label: "BPDU Type"
+    tshark_field: stp.type
+    description: "0 configuration, 128 TCN"
+  - label: "Root Bridge"
+    tshark_field: stp.root.hw
+    description: "Who the sender believes is root"
+  - label: "Sending Bridge"
+    tshark_field: stp.bridge.hw
+    description: "Who sent this BPDU"
+  - label: "Flags"
+    tshark_field: stp.flags
+    description: "Topology change and topology change acknowledgement bits"
+  - label: "Port"
+    tshark_field: stp.port
+    description: "Sending port identifier"
+checks:
+  - name: root-changing
+    when: "stp.root.hw is not stable across the capture"
+    means: >
+      The root is being re-elected, so the whole topology is reconverging
+      and traffic is disrupted.
+    next: "Find the switch with the lowest priority that keeps appearing and decide whether it should be root"
+  - name: tcn-storm
+    when: "repeated TCN BPDUs"
+    means: >
+      Something keeps flapping. Each change flushes MAC tables, which
+      looks like intermittent loss everywhere.
+    next: "Find the flapping port; an access port without portfast is the usual cause"
+  - name: no-bpdus
+    when: "no BPDUs on a link you expect them on"
+    means: >
+      STP is disabled, filtered, or the link is not actually carrying the
+      VLAN.
+    next: "On a Labtris bridge this is expected — see the note in this file's description"

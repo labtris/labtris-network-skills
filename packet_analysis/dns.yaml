@@ -1,0 +1,46 @@
+name: DNS resolution
+description: >
+  Whether name resolution works, and if not, whether the failure is the
+  query, the server or the answer.
+protocol_key: dns
+display_filter: dns
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Query Name"
+    tshark_field: dns.qry.name
+    description: "What was asked for"
+  - label: "Query Type"
+    tshark_field: dns.qry.type
+    description: "1 A, 28 AAAA, 12 PTR, 15 MX"
+  - label: "Response Code"
+    tshark_field: dns.flags.rcode
+    description: "0 NOERROR, 2 SERVFAIL, 3 NXDOMAIN"
+  - label: "Answer"
+    tshark_field: dns.a
+    description: "The address returned, if any"
+checks:
+  - name: query-no-response
+    when: "queries repeat with no reply"
+    means: >
+      The resolver is unreachable, or UDP 53 is being dropped in one
+      direction.
+    next: "Check reachability to the resolver address itself before blaming DNS"
+  - name: servfail
+    when: "rcode is 2"
+    means: >
+      The resolver tried and failed upstream — not the client's fault.
+    next: "Test the same query directly against the upstream the resolver uses"
+  - name: nxdomain-for-a-name-that-exists
+    when: "rcode is 3 for a name you expect to resolve"
+    means: >
+      Wrong search domain, or the client is asking a resolver that does
+      not host the zone.
+    next: "Compare the fully qualified name in dns.qry.name against what was typed"

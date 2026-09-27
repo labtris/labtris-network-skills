@@ -1,0 +1,22 @@
+name: DVMRP
+description: >
+  An early multicast routing protocol. Rare outside teaching material.
+protocol_key: dvmrp
+legacy: true  # kept for study material, not for deployment
+display_filter: dvmrp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Type"
+    tshark_field: dvmrp.type
+    description: "Probe, report, prune, graft"
+checks:
+  - name: probes-only
+    when: "probes with no reports"
+    means: >
+      Neighbours are found but no routes exchanged.
+    next: "Largely of historical interest; PIM replaced this"

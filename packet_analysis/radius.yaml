@@ -1,0 +1,34 @@
+name: RADIUS
+description: >
+  Authentication, authorisation and accounting exchanges.
+protocol_key: radius
+display_filter: radius
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Code"
+    tshark_field: radius.code
+    description: "1 access-request, 2 accept, 3 reject, 11 challenge"
+  - label: "Identifier"
+    tshark_field: radius.id
+    description: "Matches a request to its response"
+checks:
+  - name: request-no-response
+    when: "access-requests repeating"
+    means: >
+      The server is unreachable or the shared secret is wrong — a wrong
+      secret often produces silence, not a reject.
+    next: "Check reachability first, then the secret"
+  - name: reject
+    when: "code 3"
+    means: >
+      The server answered and said no. That is an authorisation answer,
+      not a network fault.
+    next: "The server's logs have the reason"

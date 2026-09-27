@@ -1,0 +1,25 @@
+name: GLBP
+description: >
+  Cisco first-hop redundancy that load-balances as well as failing over.
+protocol_key: glbp
+display_filter: glbp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Type"
+    tshark_field: glbp.type
+    description: "Hello and request/response types"
+  - label: "Priority"
+    tshark_field: glbp.hello.priority
+    description: "Election priority"
+checks:
+  - name: no-load-sharing
+    when: "all traffic uses one forwarder"
+    means: >
+      The group is working as failover rather than load balancing, often
+      because only one forwarder is up.
+    next: "Check that the other members reached forwarder state"

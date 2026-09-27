@@ -1,0 +1,25 @@
+name: SLARP
+description: >
+  Cisco serial line address resolution and keepalives. Legacy.
+protocol_key: slarp
+legacy: true  # kept for study material, not for deployment
+display_filter: slarp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Packet type"
+    tshark_field: slarp.ptype
+    description: "Address request, reply, or keepalive"
+  - label: "Address"
+    tshark_field: slarp.address
+    description: "Address being resolved"
+  - label: "Sequence"
+    tshark_field: slarp.mysequence
+    description: "Keepalive counter"
+checks:
+  - name: sequence-not-advancing
+    when: "mysequence stops incrementing"
+    means: >
+      The far end has stopped answering keepalives; the line will drop.
+    next: "Treat as a layer 1 problem until proven otherwise"

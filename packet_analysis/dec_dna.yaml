@@ -1,0 +1,19 @@
+name: DECnet
+description: >
+  Historic protocol suite. Present for completeness.
+protocol_key: dec_dna
+legacy: true  # kept for study material, not for deployment
+display_filter: dec_dna
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Flags"
+    tshark_field: dec_dna.flags
+    description: "Routing flags"
+checks:
+  - name: decnet-present
+    when: "any DECnet traffic"
+    means: >
+      Almost certainly not intentional on a modern network.
+    next: "Identify the source"

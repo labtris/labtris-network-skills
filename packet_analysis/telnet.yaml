@@ -1,0 +1,26 @@
+name: Telnet
+description: >
+  Unencrypted remote access. Useful in a lab precisely because you can
+  read it.
+protocol_key: telnet
+display_filter: telnet
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Data"
+    tshark_field: telnet.data
+    description: "The session contents, in clear"
+checks:
+  - name: credentials-visible
+    when: "a login prompt and its response in the capture"
+    means: >
+      Everything including the password is readable. That is the lesson,
+      not a fault.
+    next: "Use it to demonstrate why SSH exists"

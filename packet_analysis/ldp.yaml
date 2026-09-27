@@ -1,0 +1,26 @@
+name: LDP
+description: >
+  Label distribution between MPLS routers. No LDP session means no labels
+  means no LSP.
+protocol_key: ldp
+display_filter: ldp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Message type"
+    tshark_field: ldp.msg.type
+    description: "Hello, initialisation, label mapping and friends"
+checks:
+  - name: hellos-no-session
+    when: "discovery hellos with no TCP session"
+    means: >
+      Discovery works and the session does not — usually a transport
+      address that is not reachable.
+    next: "Check the router-id address is routable between the pair"

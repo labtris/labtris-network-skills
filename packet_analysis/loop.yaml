@@ -1,0 +1,25 @@
+name: Ethernet loopback
+description: >
+  The 0x9000 loopback protocol, occasionally used for link testing.
+protocol_key: loop
+legacy: true  # kept for study material, not for deployment
+display_filter: loop
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source MAC"
+    tshark_field: eth.src
+    description: "Sending interface"
+  - label: "Function"
+    tshark_field: loop.function
+    description: "Reply or forward"
+  - label: "Skip count"
+    tshark_field: loop.skipcount
+    description: "Position in the forwarding list"
+checks:
+  - name: unexpected-loopback
+    when: "loopback frames nobody initiated"
+    means: >
+      A device is testing a link, or a loop is reflecting frames.
+    next: "Check for a physical loop"

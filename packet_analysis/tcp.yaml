@@ -1,0 +1,54 @@
+name: TCP behaviour
+description: >
+  Whether a connection establishes, stays healthy, and who is limiting it.
+  Retransmissions and zero windows separate a network problem from an
+  endpoint one.
+protocol_key: tcp
+display_filter: tcp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Stream"
+    tshark_field: tcp.stream
+    description: "Groups packets into one connection"
+  - label: "SYN"
+    tshark_field: tcp.flags.syn
+    description: "Connection setup"
+  - label: "Reset"
+    tshark_field: tcp.flags.reset
+    description: "Abrupt close — someone refused or gave up"
+  - label: "Retransmission"
+    tshark_field: tcp.analysis.retransmission
+    description: "Wireshark inferred a resend"
+  - label: "Zero window"
+    tshark_field: tcp.analysis.zero_window
+    description: "Receiver has no buffer left"
+  - label: "Window size"
+    tshark_field: tcp.window_size_value
+    description: "How much the receiver will accept"
+checks:
+  - name: syn-no-synack
+    when: "SYNs repeat with no reply"
+    means: >
+      Nothing is listening, or the SYN is filtered. A reset instead means
+      something actively refused.
+    next: "Check the listener on the destination before suspecting the path"
+  - name: retransmissions
+    when: "tcp.analysis.retransmission appears repeatedly"
+    means: >
+      Packets are being lost. On a Labtris link this is often deliberate
+      impairment rather than a fault.
+    next: "Check per-direction loss on the link, then look for a congested queue"
+  - name: zero-window
+    when: "tcp.analysis.zero_window is set"
+    means: >
+      The receiver stopped reading. This is an application problem wearing
+      a network costume.
+    next: "Look at the receiving process, not the fabric"

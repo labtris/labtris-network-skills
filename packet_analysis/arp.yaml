@@ -1,0 +1,44 @@
+name: ARP resolution
+description: >
+  Whether a host can turn an IP address into a MAC address. Most 'no
+  connectivity' on a working L2 segment stops here.
+protocol_key: arp
+display_filter: arp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Opcode"
+    tshark_field: arp.opcode
+    description: "1 request, 2 reply"
+  - label: "Sender MAC"
+    tshark_field: arp.src.hw_mac
+    description: "Who is answering"
+  - label: "Sender IP"
+    tshark_field: arp.src.proto_ipv4
+    description: "The address being claimed"
+  - label: "Target IP"
+    tshark_field: arp.dst.proto_ipv4
+    description: "The address being asked about"
+  - label: "Duplicate detected"
+    tshark_field: arp.duplicate-address-detected
+    description: "Wireshark flags two MACs claiming one IP"
+checks:
+  - name: requests-no-replies
+    when: "requests repeat with no opcode 2"
+    means: >
+      The target is not on this segment, is down, or its replies are not
+      coming back this way.
+    next: "Capture on the target's own interface — a reply that is sent but not received is a different fault"
+  - name: duplicate-address
+    when: "arp.duplicate-address-detected is set"
+    means: >
+      Two hosts claim the same IP. Traffic will follow whichever answered
+      last and flap.
+    next: "Find both MACs and fix the addressing; this is not a routing problem"
+  - name: gratuitous-flood
+    when: "repeated unsolicited replies for the same IP"
+    means: >
+      Something is announcing itself hard — a failover, or a misconfigured
+      VRRP/HSRP pair.
+    next: "Check the first-hop redundancy protocol before suspecting a host"

@@ -1,0 +1,32 @@
+name: IGMP group membership
+description: >
+  Whether a host has asked for a multicast group, and whether the switch
+  heard.
+protocol_key: igmp
+display_filter: igmp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Type"
+    tshark_field: igmp.type
+    description: "0x11 query, 0x16 v2 report, 0x17 leave, 0x22 v3 report"
+  - label: "Group"
+    tshark_field: igmp.maddr
+    description: "The group being joined or left"
+checks:
+  - name: reports-no-queries
+    when: "reports with no querier"
+    means: >
+      No querier on the segment, so snooping will age out memberships and
+      traffic will stop.
+    next: "Elect a querier — on a lab segment, often nothing is configured to be one"
+  - name: version-mismatch
+    when: "v2 and v3 messages mixed"
+    means: >
+      Hosts and routers disagree on version, so some memberships are
+      invisible to the router.
+    next: "Pin the version on both ends"

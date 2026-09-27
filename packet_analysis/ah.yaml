@@ -1,0 +1,32 @@
+name: AH
+description: >
+  IPsec authentication without encryption. Rare, and broken by any NAT on
+  the path.
+protocol_key: ah
+display_filter: ah
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "SPI"
+    tshark_field: ah.spi
+    description: "Security association"
+  - label: "Sequence"
+    tshark_field: ah.sequence
+    description: "Replay counter"
+  - label: "Next header"
+    tshark_field: ah.next_header
+    description: "What follows"
+checks:
+  - name: ah-through-nat
+    when: "AH traffic crossing a NAT"
+    means: >
+      AH authenticates the IP header, so NAT invalidates it by definition.
+      This cannot be made to work.
+    next: "Use ESP instead"

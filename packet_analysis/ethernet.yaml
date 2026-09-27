@@ -1,0 +1,29 @@
+name: Ethernet framing
+description: >
+  The bottom of the stack. Useful when nothing above it makes sense.
+protocol_key: ethernet
+display_filter: eth
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source MAC"
+    tshark_field: eth.src
+    description: "Sending interface"
+  - label: "Destination MAC"
+    tshark_field: eth.dst
+    description: "Unicast, multicast or broadcast"
+  - label: "EtherType"
+    tshark_field: eth.type
+    description: "0x0800 IPv4, 0x0806 ARP, 0x86dd IPv6, 0x8100 VLAN, 0x8808 MAC control"
+checks:
+  - name: unexpected-broadcast-volume
+    when: "a large share of frames to ff:ff:ff:ff:ff:ff"
+    means: >
+      A broadcast storm, or simply a large broadcast domain.
+    next: "Check for a loop before assuming it is scale"
+  - name: unknown-ethertype
+    when: "an EtherType you do not recognise"
+    means: >
+      Something is speaking a protocol the design did not account for.
+    next: "0x8808 is MAC control — see the pfc skill"

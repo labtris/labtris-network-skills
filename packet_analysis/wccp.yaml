@@ -1,0 +1,28 @@
+name: WCCP
+description: >
+  Redirecting traffic to a cache or appliance.
+protocol_key: wccp
+display_filter: wccp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Message"
+    tshark_field: wccp.message
+    description: "Here-I-am, I-see-you, redirect assign"
+  - label: "Version"
+    tshark_field: wccp.version
+    description: "Protocol version"
+checks:
+  - name: here-i-am-no-i-see-you
+    when: "the appliance announces and the router never answers"
+    means: >
+      The service group is not configured on the router, or the numbers do
+      not match.
+    next: "Compare the service group ID on both sides"

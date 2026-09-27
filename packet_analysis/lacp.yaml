@@ -1,0 +1,43 @@
+name: LACP link aggregation
+description: >
+  Whether two ends agree to bundle links, and if not, which side is
+  refusing.
+protocol_key: lacp
+display_filter: lacp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source MAC"
+    tshark_field: eth.src
+    description: "Sending interface"
+  - label: "Actor System ID"
+    tshark_field: lacp.actor.sysid
+    description: "Who the sender is"
+  - label: "Actor Key"
+    tshark_field: lacp.actor.key
+    description: "Bundle identity — must match across members on one side"
+  - label: "Actor State"
+    tshark_field: lacp.actor.state
+    description: "Activity, timeout, aggregation, synchronisation bits"
+  - label: "Partner State"
+    tshark_field: lacp.partner.state
+    description: "What the sender believes about the far end"
+checks:
+  - name: never-synchronised
+    when: "actor state never shows synchronisation"
+    means: >
+      The two ends disagree — different keys, or one side is passive and
+      so is the other.
+    next: "At least one end must be active; compare lacp.actor.key across the members"
+  - name: partner-unknown
+    when: "partner fields stay at defaults"
+    means: >
+      The sender is not hearing the far end at all.
+    next: "Check the link carries LACP frames in both directions before touching bundle config"
+  - name: flapping-bundle
+    when: "actor state oscillates"
+    means: >
+      Members are joining and leaving — often a speed or duplex mismatch
+      on one member.
+    next: "Compare the members; a bundle is only as consistent as its worst link"

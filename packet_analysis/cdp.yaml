@@ -1,0 +1,37 @@
+name: CDP neighbour discovery
+description: >
+  Cisco's equivalent of LLDP. Tells you what is plugged in where, on kit
+  that speaks it.
+protocol_key: cdp
+display_filter: cdp
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source MAC"
+    tshark_field: eth.src
+    description: "Sending interface"
+  - label: "Device ID"
+    tshark_field: cdp.deviceid
+    description: "Neighbour hostname"
+  - label: "Platform"
+    tshark_field: cdp.platform
+    description: "Hardware model"
+  - label: "Port ID"
+    tshark_field: cdp.portid
+    description: "Which of its ports"
+  - label: "Native VLAN"
+    tshark_field: cdp.native_vlan
+    description: "Native VLAN the neighbour believes in"
+checks:
+  - name: native-vlan-mismatch
+    when: "cdp.native_vlan differs across a trunk"
+    means: >
+      Two VLANs are being merged silently. CDP notices this when nothing
+      else does.
+    next: "Fix the native VLAN on one end"
+  - name: no-cdp
+    when: "nothing on a link between two Cisco devices"
+    means: >
+      CDP is disabled, or a bridge in between is eating the multicast.
+    next: "Try LLDP as well; many devices run both"

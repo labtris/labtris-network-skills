@@ -1,0 +1,24 @@
+name: TACACS+
+description: >
+  Cisco's AAA protocol. Unlike RADIUS it encrypts the whole body.
+protocol_key: tacacs
+display_filter: tacacs
+fields:
+  - label: "Frame Number"
+    tshark_field: frame.number
+    description: "Position in the capture"
+  - label: "Source"
+    tshark_field: ip.src
+    description: "Sending address"
+  - label: "Destination"
+    tshark_field: ip.dst
+    description: "Receiving address"
+  - label: "Type"
+    tshark_field: tacplus.type
+    description: "Authentication, authorization or accounting"
+checks:
+  - name: no-response
+    when: "requests with no reply"
+    means: >
+      Server unreachable, or the key is wrong and it is dropping silently.
+    next: "TACACS+ uses TCP 49 — confirm the handshake completes before suspecting the key"
