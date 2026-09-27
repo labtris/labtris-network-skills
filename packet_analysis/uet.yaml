@@ -1,44 +1,139 @@
 name: Ultra Ethernet Transport (UET)
 description: >
-  Reading the Labtris ue-stack proof of concept on the wire. UET frames are
-  carried in UDP; tshark has no UEC dissector, so the fields below are the
-  envelope and the payload is read as bytes.
+  Reading real Ultra Ethernet on the wire. UET is its own transport on
+  protocol number 253 — not UDP — and it is dissected by the UEC reference
+  provider's Lua plugin, not by tshark's built-ins. Install it first:
+  ln -sf uet.lua ~/.config/wireshark/plugins/, from
+  github.com/ultraethernet/uet-ref-prov (MIT, dissector/uet.lua). Without
+  the plugin every field below is unknown and frames show as raw IP 253.
 protocol_key: uet
-display_filter: udp.port == 4791
+display_filter: uet
 fields:
   - label: Frame Number
     tshark_field: frame.number
     description: Position in the capture
-  - label: Source
-    tshark_field: ip.src
-    description: Sending endpoint
-  - label: Destination
-    tshark_field: ip.dst
-    description: Receiving endpoint
-  - label: UDP Length
-    tshark_field: udp.length
+  - label: PDS Packet Type
+    tshark_field: uet.pds.type
     description: >
-      Envelope size. The UET header stack is fixed width, so payload size
-      is this minus the headers
-  - label: Payload
-    tshark_field: data.data
+      Which delivery mode and which half of the exchange. 2 RUD_REQ
+      (reliable unordered), 3 ROD_REQ (reliable ordered), 4/5 RUDI
+      request/response (idempotent), 6 UUD_REQ (unreliable), 7 ACK,
+      8 ACK_CC and 9 ACK_CCX (ACK carrying congestion-control state),
+      10 NACK, 11 CTRL, 12 NACK_CCX, 13/14 RUD_CC_REQ and ROD_CC_REQ.
+      The _CC variants are where congestion control rides.
+  - label: PSN
+    tshark_field: uet.pds.psn
     description: >
-      Raw bytes. SES carries txn_id, MSN, op and endpoints; PDS carries the
-      PDC type and PSN; PDC carries credits and priority
+      Packet sequence number within the PDC. Gaps are the raw material for
+      every loss and reordering question
+  - label: Source PDC ID
+    tshark_field: uet.pds.spdcid
+    description: >
+      The sender's context id. UET names both ends explicitly — spdcid and
+      dpdcid are separate fields, so a context is identified differently in
+      each direction
+  - label: Destination PDC ID
+    tshark_field: uet.pds.dpdcid
+    description: The peer's context id, as the sender understands it
+  - label: Entropy
+    tshark_field: uet.entropy.entropy
+    description: >
+      The value switches hash on to pick a path. UET varies it deliberately
+      to spray one message across many paths, so constant entropy across a
+      flow means multipath is not happening
+  - label: Cumulative ACK PSN
+    tshark_field: uet.pds.cack_psn
+    description: Everything up to this PSN is acknowledged
+  - label: NACK Code
+    tshark_field: uet.pds.nack_code
+    description: >
+      Why a packet was refused. Includes the trimming codes (TRIMMED,
+      TRIMMED_ACK, TRIMMED_LAST_HOP), resource exhaustion (NO_PDC_AVAIL,
+      NO_PKT_BUF, NO_RESOURCE), ordering (ROD_OOO), and context errors
+      (INV_DPDCID, PDC_MODE_MISMATCH, INVALID_SYN)
+  - label: SES Opcode
+    tshark_field: uet.ses.req.opcode
+    description: >
+      The semantic operation — send, RMA write, RMA read, datagram send
+      (UUD only), and the tagged variants
+  - label: Message ID
+    tshark_field: uet.ses.message_id
+    description: >
+      Identifies one message. Several packets share it when a message
+      spans packets; pair with SOM/EOM to find the boundaries
+  - label: Job ID
+    tshark_field: uet.ses.job_id
+    description: Which job the traffic belongs to — the tenancy boundary
+  - label: Start of Message
+    tshark_field: uet.ses.req.flags.som
+    description: Set on the first packet of a message
+  - label: End of Message
+    tshark_field: uet.ses.req.flags.eom
+    description: >
+      Set on the last. A single-packet message has both SOM and EOM
+  - label: Request Length
+    tshark_field: uet.ses.req.len
+    description: Total message length, so a partial delivery is detectable
+  - label: Security Type
+    tshark_field: uet.sec.type
+    description: >
+      Present when TSS is in use. AES-GCM encrypted and integrity-checked;
+      uet.sec.epoch and uet.sec.flags.an carry the key generation
 checks:
-  - name: no-dissector
-    when: tshark shows the frames as plain UDP with no protocol detail
-    means: Expected. There is no UEC dissector in Wireshark
-    next: Read the payload bytes with `-X`, or use `uestack listen` which decodes them
-  - name: shares-port-with-roce
-    when: RoCEv2 traffic is also present on the segment
+  - name: no-dissector-installed
+    when: frames appear as IP protocol 253 with no uet fields
     means: >
-      Both use UDP 4791 in this lab, so a filter on port alone will mix
-      them. This is a property of the proof of concept, not of the spec
-    next: Filter by endpoint address as well as port when both are running
-  - name: no-congestion-response
-    when: the sender does not slow down under loss
+      The Lua dissector is not loaded. This is not a protocol fault — UET
+      has no built-in tshark dissector at all.
+    next: >
+      Symlink dissector/uet.lua from uet-ref-prov into the Wireshark
+      plugins directory and reload, then re-run the filter
+  - name: constant-entropy
+    when: uet.entropy.entropy holds one value for every packet of a message
     means: >
-      Expected. ue-stack has no congestion control at all, which is the
-      largest gap in the proof of concept
-    next: Use ue-sim for congestion-control work; it is deterministic and simulates time
+      Packets are following a single path, so the fabric's other links are
+      idle while one is congested. Either the sender is not spraying or the
+      configuration pinned it.
+    next: >
+      Confirm multipath is enabled on the sender — the UEC reference
+      provider states multi-path delivery is not fully implemented, so on
+      that stack this may be expected rather than a fault
+  - name: trimmed-nacks
+    when: uet.pds.nack_code is TRIMMED, TRIMMED_ACK or TRIMMED_LAST_HOP
+    means: >
+      A switch hit congestion and forwarded a header-only version of the
+      packet instead of dropping it silently. The NACK is the endpoint
+      being told early, which is the point of trimming — a fast signal
+      rather than waiting for a timeout.
+    next: >
+      Find which hop trimmed, then read that switch's queue depth and ECN
+      configuration. Trimming needs ASIC and SAI support, so its presence
+      also tells you the path is genuinely UE-capable
+  - name: resource-nacks
+    when: nack_code is NO_PDC_AVAIL, NO_PKT_BUF, NO_RESOURCE or NO_SES_MSG_AVAIL
+    means: >
+      The receiver ran out of contexts, buffers or message slots. This is
+      scale, not misconfiguration — the far end cannot keep up with the
+      number of peers or the offered rate.
+    next: >
+      Count distinct spdcid values to see how many contexts are open, and
+      compare against the receiver's configured limits
+  - name: rod-out-of-order
+    when: nack_code is ROD_OOO on a ROD_REQ stream
+    means: >
+      Reliable ordered delivery received a PSN out of order. Expected
+      whenever ROD runs over a spraying fabric; the receiver must restore
+      order, and the cost shows up as latency rather than loss.
+    next: >
+      If this dominates, ask whether the traffic needs ROD at all — RUD
+      tolerates reordering by design and is the better fit for most
+      collectives
+  - name: psn-gap-without-nack
+    when: PSN values skip and no NACK or retransmission follows
+    means: >
+      Packets left the sender and nothing noticed. On UUD that is correct
+      behaviour, since UUD is unreliable. On RUD or ROD it means the loss
+      detection itself is not working.
+    next: >
+      Check uet.pds.type first — confirm you are actually looking at a
+      reliable mode before treating a gap as a bug
