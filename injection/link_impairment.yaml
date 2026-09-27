@@ -1,0 +1,20 @@
+name: One-way latency on a single link
+fault_key: asymmetric_delay
+applies_when: any topology with at least one point-to-point link
+difficulty: moderate
+inject:
+  - tool: impair_link
+    args:
+      direction: a_to_b
+      delay_ms: 150
+symptom: >
+  Ping works but round-trip time is far higher than the topology suggests.
+  Protocols with tight timers may flap while the link stays up.
+findable_with: >
+  Ping from both ends. Symmetric delay shows the same RTT either way;
+  this does not, which is the tell and is impossible to produce on
+  hardware without two separate impairments.
+teaches: >
+  That RTT is the sum of two independent paths, and that a one-way problem
+  hides inside a symmetric measurement.
+revert: impair_link with delay_ms 0 in the same direction

@@ -1,0 +1,23 @@
+name: RDMA collapses when another class fills the queue
+fault_key: pfc_off_under_load
+applies_when: >
+  Two rdma-host nodes on a link, a host kernel of Linux 7.1 or newer, and
+  PFC available on the link
+difficulty: hard
+inject:
+  - tool: impair_link
+    args:
+      pfc: false
+      rate_kbit: 100000
+  - note: then generate bulk TCP on priority 0 while RDMA runs on priority 3
+symptom: >
+  ib_send_bw throughput collapses or the transfer stalls, while plain ping
+  on the same link stays healthy.
+findable_with: >
+  packet_analysis/roce_v2.yaml — PSN gaps and retransmission requests, and
+  ecn_marking.yaml showing no CE marks because there is no RED to apply them.
+teaches: >
+  Why RoCE wants a lossless class. Turn PFC back on for priority 3 and run
+  the same test: the classes stop sharing a fate. This is the lesson the
+  whole DCB stack exists for, and it is one command apart in a lab.
+revert: impair_link with pfc true and pfc_priorities including 3

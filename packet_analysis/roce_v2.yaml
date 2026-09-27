@@ -1,0 +1,60 @@
+name: RoCEv2 (RDMA over Converged Ethernet)
+description: >
+  Reading an RDMA transfer on the wire. RoCEv2 is InfiniBand transport
+  headers inside UDP on port 4791, so the IB dissector applies once the
+  port is recognised.
+protocol_key: roce_v2
+display_filter: udp.port == 4791
+fields:
+  - label: Frame Number
+    tshark_field: frame.number
+    description: Position in the capture
+  - label: Source
+    tshark_field: ip.src
+    description: Sending RDMA endpoint
+  - label: Destination
+    tshark_field: ip.dst
+    description: Receiving RDMA endpoint
+  - label: BTH Opcode
+    tshark_field: infiniband.bth.opcode
+    description: >
+      The operation — SEND, RDMA WRITE, RDMA READ request/response, ACK.
+      The opcode sequence is how you tell a completed transfer from a stall
+  - label: Destination QP
+    tshark_field: infiniband.bth.destqp
+    description: Queue pair on the receiver. Traffic for an unexpected QP is misdirected
+  - label: PSN
+    tshark_field: infiniband.bth.psn
+    description: Packet sequence number. Gaps mean loss, repeats mean retransmission
+  - label: Virtual Address
+    tshark_field: infiniband.reth.va
+    description: Remote memory address for an RDMA READ or WRITE
+  - label: DMA Length
+    tshark_field: infiniband.reth.dmalen
+    description: Bytes the operation asks for
+  - label: AETH Syndrome
+    tshark_field: infiniband.aeth.syndrome
+    description: ACK, RNR NAK or an error NAK. This is where the failure is named
+checks:
+  - name: no-4791-at-all
+    when: the connection is established but no UDP 4791 packets appear
+    means: >
+      The verbs layer worked and the transport did not. On Labtris this is
+      almost always the host kernel: rxe only gained per-namespace UDP 4791
+      sockets in Linux 7.1, and before that a device created inside a lab
+      node is bound to a socket in the host namespace.
+    next: >
+      Run `ss -lun | grep 4791` on the host. One global 0.0.0.0:4791 means
+      the kernel is too old; a per-namespace listener means it is fine
+  - name: rnr-nak-storm
+    when: AETH syndrome repeatedly indicates RNR NAK
+    means: The receiver has no buffer posted. The sender is ahead of the receiver
+    next: Look at the receiving application, not the fabric
+  - name: psn-gaps
+    when: PSN jumps forward and the peer requests a retransmission
+    means: >
+      Packets are being dropped. RoCEv2 expects a lossless class; a lossy
+      one degrades badly rather than gracefully
+    next: >
+      Check whether PFC is on for this priority, and whether another class
+      is filling the same queue

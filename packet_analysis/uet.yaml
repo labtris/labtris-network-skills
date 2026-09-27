@@ -1,0 +1,44 @@
+name: Ultra Ethernet Transport (UET)
+description: >
+  Reading the Labtris ue-stack proof of concept on the wire. UET frames are
+  carried in UDP; tshark has no UEC dissector, so the fields below are the
+  envelope and the payload is read as bytes.
+protocol_key: uet
+display_filter: udp.port == 4791
+fields:
+  - label: Frame Number
+    tshark_field: frame.number
+    description: Position in the capture
+  - label: Source
+    tshark_field: ip.src
+    description: Sending endpoint
+  - label: Destination
+    tshark_field: ip.dst
+    description: Receiving endpoint
+  - label: UDP Length
+    tshark_field: udp.length
+    description: >
+      Envelope size. The UET header stack is fixed width, so payload size
+      is this minus the headers
+  - label: Payload
+    tshark_field: data.data
+    description: >
+      Raw bytes. SES carries txn_id, MSN, op and endpoints; PDS carries the
+      PDC type and PSN; PDC carries credits and priority
+checks:
+  - name: no-dissector
+    when: tshark shows the frames as plain UDP with no protocol detail
+    means: Expected. There is no UEC dissector in Wireshark
+    next: Read the payload bytes with `-X`, or use `uestack listen` which decodes them
+  - name: shares-port-with-roce
+    when: RoCEv2 traffic is also present on the segment
+    means: >
+      Both use UDP 4791 in this lab, so a filter on port alone will mix
+      them. This is a property of the proof of concept, not of the spec
+    next: Filter by endpoint address as well as port when both are running
+  - name: no-congestion-response
+    when: the sender does not slow down under loss
+    means: >
+      Expected. ue-stack has no congestion control at all, which is the
+      largest gap in the proof of concept
+    next: Use ue-sim for congestion-control work; it is deterministic and simulates time

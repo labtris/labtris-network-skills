@@ -1,0 +1,45 @@
+name: ECN marking under queue pressure
+description: >
+  Whether congestion is being signalled rather than absorbed as loss. This
+  is the signal DCTCP, DCQCN and UET congestion control all read, and the
+  one a Labtris RED qdisc or an ecn.p4 switch produces.
+protocol_key: ecn
+display_filter: ip.dsfield.ecn > 0
+fields:
+  - label: Frame Number
+    tshark_field: frame.number
+    description: Position in the capture
+  - label: Source
+    tshark_field: ip.src
+    description: Sender
+  - label: Destination
+    tshark_field: ip.dst
+    description: Receiver
+  - label: ECN bits
+    tshark_field: ip.dsfield.ecn
+    description: >
+      0 not-ECT, 1 ECT(1), 2 ECT(0), 3 CE. CE is the mark a congested
+      queue applies; the endpoints must have negotiated ECT for it to happen
+  - label: DSCP
+    tshark_field: ip.dsfield.dscp
+    description: Which class this packet is in, for per-priority queueing
+  - label: 802.1p Priority
+    tshark_field: vlan.priority
+    description: The PCP a PFC-enabled switch queues on, when the frame is tagged
+checks:
+  - name: no-ect-marked
+    when: all packets show ECN bits 0
+    means: >
+      The endpoints never negotiated ECN, so the queue has nothing it is
+      allowed to mark and will drop instead
+    next: Enable ECN on the sender; without ECT the RED qdisc can only drop
+  - name: ce-but-no-slowdown
+    when: CE marks appear and the sending rate does not change
+    means: The receiver is not echoing congestion back, or the sender ignores it
+    next: Check the congestion control in use — plain Reno will not react to CE
+  - name: marks-on-the-wrong-class
+    when: CE appears on a priority that was meant to be lossless
+    means: >
+      Traffic is landing in a different queue than intended, so the class
+      isolation is not doing what the design assumed
+    next: Check the DSCP-to-priority mapping and the priomap on the link

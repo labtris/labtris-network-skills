@@ -1,0 +1,40 @@
+# What the assistant may run inside a lab node.
+#
+# Two layers. Labtris core already requires confirmation for destructive
+# TOOLS (delete a lab, delete a node); this file is about the content of
+# console_exec, which is a shell and therefore not covered by that.
+#
+# Default posture: a lab node is disposable, so the bar is "do not damage
+# the host or reach outside the lab", not "do not damage the node".
+
+deny:
+  # Reaching the host or another tenant from inside a node.
+  - pattern: "nsenter"
+    why: Crosses namespaces — a lab node has no business leaving its own
+  - pattern: "docker|podman|crictl"
+    why: A node reaching a container runtime is reaching the host's
+  - pattern: "/var/run/docker.sock"
+    why: Same, by socket rather than by binary
+  - pattern: "mount\\s+-o\\s+bind\\s+/proc"
+    why: Host /proc access
+  # Destroying the node in ways that look like a lab problem afterwards.
+  - pattern: "rm\\s+-rf\\s+/(\\s|$)"
+    why: Leaves a node that fails confusingly rather than cleanly
+  - pattern: ":\\(\\)\\{.*\\};:"
+    why: Fork bomb — takes the shared host down, not just the node
+
+confirm:
+  # Allowed, but the user is told first.
+  - pattern: "reboot|shutdown|halt|poweroff"
+    why: Ends the node; usually fine in a lab but rarely what was meant
+  - pattern: "iptables\\s+-F|nft\\s+flush"
+    why: Wipes rules the lab may depend on
+  - pattern: "\\bdd\\b.*of=/dev/"
+    why: Writes to a device node
+
+allow_unlisted: true
+# Rationale: a lab exists to be experimented in. An allowlist would have to
+# enumerate every vendor CLI and every diagnostic anyone might reach for,
+# and would be wrong more often than the denylist is. The deny rules above
+# are about the blast radius leaving the node, which is the thing that
+# actually matters on a shared instance.

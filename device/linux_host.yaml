@@ -1,0 +1,17 @@
+name: Linux host
+platform_key: linux
+detect:
+  - command: "uname -s"
+    matches: "Linux"
+shell: sh
+notes: >
+  Alpine and Ubuntu lab nodes. Prefer `ip -br` for anything the assistant
+  has to parse — the brief form is stable, the verbose form is not.
+read_only:
+  interfaces: "ip -br addr"
+  links: "ip -br link"
+  routes: "ip route"
+  neighbours: "ip neigh"
+  listening: "ss -lntup"
+  rdma_links: "rdma link show"
+  rdma_devices: "ibv_devinfo -l"

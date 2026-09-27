@@ -1,0 +1,16 @@
+# The shape every file in injection/ follows.
+#
+# A fault is only useful for teaching if the learner can find it. Each one
+# therefore says what the symptom looks like from inside the lab, not just
+# how to break it.
+name: Human-readable title
+fault_key: short_key
+applies_when: what must be in the topology for this fault to make sense
+difficulty: easy | moderate | hard
+inject:                      # Labtris primitives, not vendor CLI
+  - tool: impair_link        # an MCP tool name
+    args: { }
+symptom: what the learner sees first
+findable_with: the packet_analysis skill or command that reveals it
+teaches: the idea the exercise is actually for
+revert: how to put it back

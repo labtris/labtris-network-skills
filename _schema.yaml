@@ -1,0 +1,18 @@
+# The shape every file in packet_analysis/ follows.
+#
+# Deliberately declarative and small. The assistant is told which fields
+# matter for a protocol and how to filter for them; it does the reasoning.
+# Logic in here would be logic nobody can review as network knowledge.
+name: Human-readable title
+description: One sentence — what this protocol tells you when it goes wrong
+protocol_key: short_key           # what the assistant asks for
+display_filter: bgp               # a valid tshark display filter
+fields:                           # the columns a capture is reduced to
+  - label: Frame Number
+    tshark_field: frame.number    # MUST exist: tshark -G fields
+    description: Why this field matters when reading the protocol
+checks:                           # what "wrong" looks like, in words
+  - name: short-name
+    when: the condition to look for
+    means: what it implies
+    next: what to do about it

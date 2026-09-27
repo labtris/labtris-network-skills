@@ -1,0 +1,17 @@
+name: BGP will not establish
+fault_key: bgp_no_establish
+applies_when: two or more nodes running FRR with a configured BGP session
+difficulty: easy
+inject:
+  - tool: console_exec
+    args:
+      command: "vtysh -c 'conf t' -c 'router bgp 65001' -c 'neighbor 10.0.0.2 remote-as 65099'"
+symptom: The session cycles between Idle, Connect and Active and never reaches Established
+findable_with: >
+  packet_analysis/bgp.yaml — the open-then-notification check. The OPEN is
+  answered with a NOTIFICATION rather than a KEEPALIVE.
+teaches: >
+  That BGP validates the peer AS in the OPEN before anything else, and
+  that "the session is down" is not a diagnosis until you have read the
+  notification code.
+revert: set remote-as back to the correct value and clear the neighbour

@@ -1,0 +1,49 @@
+name: OSPF adjacency
+description: >
+  Why two OSPF routers on the same segment do not become neighbours. The
+  hello parameters must match exactly; most failures are visible in one
+  hello packet.
+protocol_key: ospf
+display_filter: ospf
+fields:
+  - label: Frame Number
+    tshark_field: frame.number
+    description: Position in the capture
+  - label: Source
+    tshark_field: ip.src
+    description: Sending interface address
+  - label: Message Type
+    tshark_field: ospf.msg
+    description: 1 Hello, 2 DB Description, 3 LS Request, 4 LS Update, 5 LS Ack
+  - label: Router ID
+    tshark_field: ospf.srcrouter
+    description: Sender's router ID. Duplicates prevent adjacency
+  - label: Hello Interval
+    tshark_field: ospf.hello.hello_interval
+    description: Must match on both ends
+  - label: Dead Interval
+    tshark_field: ospf.hello.router_dead_interval
+    description: Must match on both ends
+  - label: Network Mask
+    tshark_field: ospf.hello.network_mask
+    description: Must match — a /24 and a /25 on one segment will not adjacate
+  - label: Router Priority
+    tshark_field: ospf.hello.router_priority
+    description: 0 means the router will never be DR or BDR
+checks:
+  - name: hellos-one-way
+    when: hellos appear from one router only
+    means: The other side is not sending, or its hellos are not reaching this segment
+    next: Capture on the other node's interface before assuming a config problem
+  - name: timer-mismatch
+    when: hello_interval or router_dead_interval differ between senders
+    means: Adjacency will never form. OSPF does not negotiate these
+    next: Make them match; the dead interval is conventionally four times the hello
+  - name: mask-mismatch
+    when: ospf.hello.network_mask differs between senders
+    means: Each believes the other is on a different subnet
+    next: Fix the prefix length on one end
+  - name: all-priority-zero
+    when: every router_priority on a broadcast segment is 0
+    means: No DR can be elected, so adjacencies stay stuck in two-way
+    next: Give one router a non-zero priority

@@ -1,0 +1,19 @@
+name: FRR
+platform_key: frr
+detect:
+  - command: "vtysh -c 'show version'"
+    matches: "FRRouting"
+shell: bash
+notes: >
+  The default routing node in Labtris and the one the fabric generator
+  writes config for. vtysh takes -c repeatedly, so a whole change can be
+  one command rather than an interactive session.
+read_only:
+  show_version: "vtysh -c 'show version'"
+  show_running: "vtysh -c 'show running-config'"
+  bgp_summary: "vtysh -c 'show bgp summary'"
+  bgp_neighbors: "vtysh -c 'show bgp neighbors'"
+  ospf_neighbor: "vtysh -c 'show ip ospf neighbor'"
+  routes: "vtysh -c 'show ip route'"
+  evpn_vni: "vtysh -c 'show evpn vni'"
+  interfaces: "vtysh -c 'show interface brief'"

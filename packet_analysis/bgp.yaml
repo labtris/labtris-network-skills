@@ -1,0 +1,57 @@
+name: BGP session and route exchange
+description: >
+  Why a BGP session will not come up, or comes up and carries no prefixes.
+  Most lab BGP failures are the first two checks below.
+protocol_key: bgp
+display_filter: bgp
+fields:
+  - label: Frame Number
+    tshark_field: frame.number
+    description: Position in the capture, for referring back to a packet
+  - label: Source
+    tshark_field: ip.src
+    description: Which speaker sent it
+  - label: Destination
+    tshark_field: ip.dst
+    description: Which peer it was sent to
+  - label: Message Type
+    tshark_field: bgp.type
+    description: 1 OPEN, 2 UPDATE, 3 NOTIFICATION, 4 KEEPALIVE, 5 ROUTE-REFRESH
+  - label: My AS
+    tshark_field: bgp.open.myas
+    description: AS in the OPEN — compare against what the peer expects
+  - label: Hold Time
+    tshark_field: bgp.open.holdtime
+    description: Proposed hold time; the lower of the two is used
+  - label: BGP Identifier
+    tshark_field: bgp.open.identifier
+    description: Router ID. Two speakers with the same ID will not peer
+  - label: Notification Code
+    tshark_field: bgp.notify.major_error
+    description: Why the session was torn down
+  - label: Notification Subcode
+    tshark_field: bgp.notify.minor_error
+    description: The specific reason within that code
+  - label: NLRI Prefix
+    tshark_field: bgp.nlri_prefix
+    description: Prefixes actually advertised in an UPDATE
+checks:
+  - name: open-then-notification
+    when: an OPEN is followed by a NOTIFICATION rather than a KEEPALIVE
+    means: >
+      The peers disagree about something in the OPEN. Major code 2 is an
+      OPEN message error; subcode 2 is a bad peer AS, which in a lab is
+      almost always a typo or the wrong neighbour statement.
+    next: Compare `bgp.open.myas` on each side against the configured neighbour remote-as
+  - name: session-up-no-prefixes
+    when: KEEPALIVEs flow but no UPDATE carries bgp.nlri_prefix
+    means: >
+      The session is fine and the policy is not. Either nothing is being
+      originated, or an outbound filter is dropping everything.
+    next: Check what the sender is meant to originate before looking at the receiver
+  - name: session-flapping
+    when: OPEN and NOTIFICATION repeat on a cycle close to the hold time
+    means: >
+      KEEPALIVEs are not arriving inside the hold time. On a Labtris link
+      this is usually deliberate impairment rather than a real fault.
+    next: Check for per-direction delay or loss on the link before suspecting config
