@@ -1,0 +1,56 @@
+name: PFC and 802.3x PAUSE
+description: >
+  Whether flow control is actually being exerted on the wire, and on which
+  priority. Both legacy PAUSE and 802.1Qbb per-priority PFC are MAC Control
+  frames, which Wireshark dissects as MACC.
+protocol_key: pfc
+display_filter: macc
+fields:
+  - label: Frame Number
+    tshark_field: frame.number
+    description: Position in the capture
+  - label: Source
+    tshark_field: eth.src
+    description: Which port asked the peer to stop
+  - label: Opcode
+    tshark_field: macc.opcode
+    description: >
+      0x0001 is legacy 802.3x PAUSE (stops the whole link), 0x0101 is
+      802.1Qbb PFC (stops named priorities only)
+  - label: Pause Time
+    tshark_field: macc.pause_time
+    description: >
+      Legacy PAUSE duration, in quanta of 512 bit-times. Applies to all
+      traffic, which is why it is the wrong tool for a converged fabric
+  - label: Class Enable Vector
+    tshark_field: macc.cbfc.enbv
+    description: Bitmap of which of the eight priorities this PFC frame acts on
+  - label: Pause Time — class 3
+    tshark_field: macc.cbfc.pause_time.c3
+    description: Quanta for priority 3, conventionally the RoCE lossless class
+  - label: Pause Time — class 4
+    tshark_field: macc.cbfc.pause_time.c4
+    description: Quanta for priority 4
+checks:
+  - name: no-pause-frames-on-labtris
+    when: the filter matches nothing on a Labtris link under congestion
+    means: >
+      Expected. Labtris implements the queueing half of 802.1Qbb — eight
+      strict-priority bands with per-class RED and ECN marking — and does
+      not emit PAUSE frames. Backpressure is signalled by ECN, not by
+      telling the sender to stop.
+    next: >
+      Use ecn_marking.yaml instead. If you specifically need to see PAUSE
+      frames, that needs real hardware or the XDP work that is not built
+  - name: legacy-pause-on-a-converged-link
+    when: opcode is 0x0001 rather than 0x0101
+    means: >
+      Something is pausing the entire link rather than one class. Storage
+      or RDMA traffic will stall alongside whatever actually congested
+    next: Enable per-priority PFC on the peer so it can pause one class instead
+  - name: pause-storm
+    when: PFC frames repeat continuously for one class
+    means: >
+      A receiver cannot drain that class. PFC is doing its job and the
+      congestion is behind it; head-of-line blocking may spread upstream
+    next: Look at the receiver for that priority, not at the link

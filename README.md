@@ -49,7 +49,26 @@ tshark 4.2.2.
 
 ## What Labtris covers that a general network-skills repo does not
 
-`packet_analysis/roce_v2.yaml`, `uet.yaml` and `ecn_marking.yaml` exist
-because Labtris runs RDMA over soft-RoCE, puts Ultra Ethernet frames on the
-wire and marks ECN with a real RED qdisc. Those are the labs nobody else can
-run, so they are the rules nobody else has written.
+`packet_analysis/roce_v2.yaml`, `uet.yaml`, `ecn_marking.yaml` and
+`pfc.yaml` exist because Labtris runs RDMA over soft-RoCE, puts Ultra
+Ethernet frames on the wire, and marks ECN with a real RED qdisc under an
+eight-band priority tree. Those are the labs nobody else can run, so they
+are the rules nobody else has written.
+
+`pfc.yaml` is a special case worth reading: its first check is that the
+filter matches *nothing*, because Labtris ships the queueing half of
+802.1Qbb and does not emit PAUSE frames. A rule that explains an absence
+is still a rule — it stops someone concluding their lab is broken.
+
+## Coverage, honestly
+
+GNS3's repository has 61 protocol rules and 51 fault families. This one has
+six and four. On breadth we are nowhere, and a contributor should know that
+going in rather than discover it.
+
+Where this repository is not behind is the part that comes from what
+Labtris can actually run: RoCEv2, Ultra Ethernet, ECN under queue pressure
+and PFC. Those cannot be written against an emulator that has no RDMA, no
+UET stack and no priority queueing, which is why they do not exist
+elsewhere. Breadth is a matter of time; those four are a matter of what the
+platform underneath can do.
